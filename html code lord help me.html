@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Pie Chart - Teacher's Question Distribution</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        canvas {
+            max-width: 600px;
+            margin: 20px auto;
+            display: block;
+        }
+        .form-container {
+            margin-top: 20px;
+        }
+        input {
+            padding: 5px;
+            font-size: 14px;
+            text-align: center;
+        }
+        button {
+            padding: 8px 12px;
+            font-size: 14px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        h2 {
+            font-size: 24px;
+        }
+        h3 {
+            font-size: 18px;
+        }
+        .sections-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 900px;
+            margin: 20px auto;
+            align-items: center;
+        }
+        .grid-header {
+            font-weight: bold;
+            background-color: #ddd;
+            padding: 10px;
+        }
+        .grid-item {
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .form-container button {
+            margin: 10px 5px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Question Distribution Pie Chart for Teachers</h2>
+    <canvas id="myPieChart" width="600" height="600"></canvas>
+
+    <div class="form-container">
+        <h3>Input Sections</h3>
+        <div class="sections-grid" id="sectionGrid">
+            <!-- Header Row -->
+            <div class="grid-header">Section Name</div>
+            <div class="grid-header">Number of Questions</div>
+            <div class="grid-header">Points per Question</div>
+            <div class="grid-header">Color</div>
+
+            <!-- Default Sections -->
+            <input type="text" class="grid-item" value="Section 1">
+            <input type="number" class="grid-item" value="5">
+            <input type="number" class="grid-item" value="1">
+            <input type="color" class="grid-item" value="#FF6384">
+
+            <input type="text" class="grid-item" value="Section 2">
+            <input type="number" class="grid-item" value="10">
+            <input type="number" class="grid-item" value="2">
+            <input type="color" class="grid-item" value="#36A2EB">
+        </div>
+        <button id="addSection">Add Section</button>
+        <button id="subtractSection">Remove Section</button>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('myPieChart').getContext('2d');
+        const sectionGrid = document.getElementById('sectionGrid');
+
+        function getChartData() {
+            let labels = [];
+            let values = [];
+            let colors = [];
+            const inputs = sectionGrid.getElementsByTagName('input');
+
+            for (let i = 0; i < inputs.length; i += 4) {
+                const sectionName = inputs[i].value;
+                const numQuestions = parseFloat(inputs[i + 1].value) || 0;
+                const pointsPerQuestion = parseFloat(inputs[i + 2].value) || 0;
+                const color = inputs[i + 3].value;
+
+                labels.push(sectionName);
+                values.push(numQuestions * pointsPerQuestion);
+                colors.push(color);
+            }
+            return { labels, values, colors };
+        }
+
+        let myPieChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ["Section 1", "Section 2"],
+                datasets: [{
+                    data: [5, 20],
+                    backgroundColor: ['#FF6384', '#36A2EB'],
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            }
+        });
+
+        function updateChart() {
+            const { labels, values, colors } = getChartData();
+            myPieChart.data.labels = labels;
+            myPieChart.data.datasets[0].data = values;
+            myPieChart.data.datasets[0].backgroundColor = colors;
+            myPieChart.update();
+        }
+
+        // Function to attach change event to all inputs
+        function attachInputListeners() {
+            const inputs = sectionGrid.getElementsByTagName('input');
+            for (let input of inputs) {
+                input.addEventListener('input', updateChart);
+            }
+        }
+
+        // Add Section button
+        document.getElementById('addSection').addEventListener('click', function() {
+            const numSections = sectionGrid.getElementsByTagName('input').length / 4 + 1;
+            sectionGrid.innerHTML += `
+                <input type="text" class="grid-item" value="Section ${numSections}">
+                <input type="number" class="grid-item" value="0">
+                <input type="number" class="grid-item" value="0">
+                <input type="color" class="grid-item" value="#${Math.floor(Math.random()*16777215).toString(16)}">
+            `;
+            attachInputListeners(); // Attach listeners to new inputs
+        });
+
+        // Remove Section button
+        document.getElementById('subtractSection').addEventListener('click', function() {
+            const inputs = sectionGrid.getElementsByTagName('input');
+            if (inputs.length > 4) {
+                let removed = false;
+
+                // Check for empty rows first
+                for (let i = inputs.length - 4; i >= 0; i -= 4) {
+                    if (inputs[i].value.trim() === '' || (inputs[i + 1].value === '0' && inputs[i + 2].value === '0')) {
+                        sectionGrid.removeChild(inputs[i]);     // Remove section name
+                        sectionGrid.removeChild(inputs[i]);     // Remove numQuestions
+                        sectionGrid.removeChild(inputs[i]);     // Remove pointsPerQuestion
+                        sectionGrid.removeChild(inputs[i]);     // Remove color picker
+                        removed = true;
+                        break;
+                    }
+                }
+
+                // If no empty rows, remove the last row
+                if (!removed) {
+                    sectionGrid.removeChild(inputs[inputs.length - 1]);
+                    sectionGrid.removeChild(inputs[inputs.length - 1]);
+                    sectionGrid.removeChild(inputs[inputs.length - 1]);
+                    sectionGrid.removeChild(inputs[inputs.length - 1]);
+                }
+            }
+        });
+
+        // Attach listeners initially to existing inputs
+        attachInputListeners();
+    </script>
+</body>
+</html>
